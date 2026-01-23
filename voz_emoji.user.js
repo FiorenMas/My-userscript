@@ -16,8 +16,8 @@
 // @connect      i.imgur.com
 // @connect      5.pik.vn
 // @run-at       document-end
-// @downloadURL  https://gist.github.com/FiorenMas/ed91b14ff1a96fb1fe0a3d3bd580bf16a/raw/voz_emoji.user.js
-// @updateURL    https://gist.github.com/FiorenMas/ed91b14ff1a96fb1fe0a3d3bd580bf16/raw/voz_emoji.user.js
+// @downloadURL  https://github.com/FiorenMas/My-userscript/raw/refs/heads/main/voz_emoji.user.js
+// @updateURL    https://github.com/FiorenMas/My-userscript/raw/refs/heads/main/voz_emoji.user.js
 // ==/UserScript==
 
 (function () {
