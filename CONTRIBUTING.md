@@ -33,6 +33,8 @@ Every userscript must include these metadata fields:
 - `@description`: Brief explanation of functionality
 - `@author`: Your name or username
 - `@match` or `@include`: URL patterns where the script runs
+  - Use specific patterns like `*://example.com/*` for site-specific scripts
+  - Use `*://*/*` only if your script needs to work on all websites
 - `@license`: GPL-3.0 (to match repository license)
 
 ### 3. Code Quality

@@ -25,12 +25,17 @@
             // Copy to clipboard
             if (typeof GM_setClipboard !== 'undefined') {
                 GM_setClipboard(markdown);
+                showNotification('Copied as markdown: ' + markdown);
             } else {
-                navigator.clipboard.writeText(markdown);
+                navigator.clipboard.writeText(markdown)
+                    .then(function() {
+                        showNotification('Copied as markdown: ' + markdown);
+                    })
+                    .catch(function(err) {
+                        console.error('Failed to copy to clipboard:', err);
+                        showNotification('Failed to copy to clipboard');
+                    });
             }
-
-            // Show notification
-            showNotification('Copied as markdown: ' + markdown);
             e.preventDefault();
         }
     });
@@ -61,7 +66,9 @@
             notification.style.opacity = '0';
             notification.style.transition = 'opacity 0.5s';
             setTimeout(function() {
-                document.body.removeChild(notification);
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
             }, 500);
         }, 3000);
     }
