@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Voz Emoji
 // @namespace    Voz Emoji
-// @version      2.1
+// @version      2.2
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=voz.vn
 // @description  Add emoji button to toolbar
 // @author       Fioren
@@ -272,6 +272,296 @@
 
     function saveAlbumOrder(albums) {
         GM_setValue(DB_KEY, albums);
+    }
+
+    function updateAlbumImages(albumIndex, newImages) {
+        const albums = getAlbums();
+        if (albumIndex >= 0 && albumIndex < albums.length) {
+            albums[albumIndex].images = newImages;
+            if (newImages.length > 0) {
+                albums[albumIndex].preview = newImages[0].base64;
+            }
+            GM_setValue(DB_KEY, albums);
+        }
+    }
+
+    function showAlbumImagesPopup(albumIndex, parentModal) {
+        const albums = getAlbums();
+        const album = albums[albumIndex];
+        if (!album || !album.images || album.images.length === 0) {
+            alert('Album này không có hình ảnh');
+            return;
+        }
+
+        let currentImages = [...album.images];
+
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10002;
+        `;
+
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: ${theme.bg};
+            color: ${theme.text};
+            padding: 25px;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid ${theme.border};
+        `;
+
+        const header = document.createElement('div');
+        header.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        `;
+
+        const title = document.createElement('h2');
+        title.textContent = `📷 ${album.name}`;
+        title.style.margin = '0';
+        header.appendChild(title);
+
+        const imageCount = document.createElement('span');
+        imageCount.style.cssText = `
+            background: ${theme.primary};
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+        `;
+        imageCount.id = 'album-image-count';
+        imageCount.textContent = `${currentImages.length} hình ảnh`;
+        header.appendChild(imageCount);
+
+        content.appendChild(header);
+
+        const infoMsg = document.createElement('div');
+        infoMsg.style.cssText = `
+            background: ${theme.infoBox};
+            border-left: 4px solid ${theme.primary};
+            padding: 10px 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: ${theme.infoText};
+        `;
+        infoMsg.innerHTML = '💡 Kéo thả để sắp xếp • Nhấn ✕ để xóa hình ảnh';
+        content.appendChild(infoMsg);
+
+        const grid = document.createElement('div');
+        grid.style.cssText = `
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        `;
+        grid.id = 'album-images-grid';
+
+        function renderImages() {
+            grid.innerHTML = '';
+            const countEl = document.getElementById('album-image-count');
+            if (countEl) countEl.textContent = `${currentImages.length} hình ảnh`;
+
+            currentImages.forEach((img, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = `
+                    position: relative;
+                    border: 2px solid ${theme.border};
+                    border-radius: 8px;
+                    padding: 4px;
+                    cursor: grab;
+                    transition: all 0.2s;
+                    background: ${theme.bg};
+                `;
+                wrapper.draggable = true;
+                wrapper.dataset.index = index;
+
+                wrapper.onmouseover = function() {
+                    this.style.borderColor = theme.primary;
+                    this.style.transform = 'scale(1.03)';
+                    this.querySelector('.delete-btn').style.opacity = '1';
+                };
+                wrapper.onmouseout = function() {
+                    this.style.borderColor = theme.border;
+                    this.style.transform = 'scale(1)';
+                    this.querySelector('.delete-btn').style.opacity = '0.7';
+                };
+
+                const imgEl = document.createElement('img');
+                imgEl.src = img.base64 || img.url;
+                imgEl.style.cssText = `
+                    width: 100%;
+                    height: 80px;
+                    object-fit: cover;
+                    border-radius: 6px;
+                    display: block;
+                `;
+                wrapper.appendChild(imgEl);
+
+                const indexBadge = document.createElement('div');
+                indexBadge.style.cssText = `
+                    position: absolute;
+                    bottom: -6px;
+                    left: -6px;
+                    background: ${theme.primary};
+                    color: white;
+                    font-size: 10px;
+                    font-weight: bold;
+                    min-width: 20px;
+                    height: 20px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0 4px;
+                `;
+                indexBadge.textContent = index + 1;
+                wrapper.appendChild(indexBadge);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.innerHTML = '✕';
+                deleteBtn.style.cssText = `
+                    position: absolute;
+                    top: -8px;
+                    right: -8px;
+                    width: 22px;
+                    height: 22px;
+                    background: ${theme.danger};
+                    color: white;
+                    border: 2px solid ${theme.bg};
+                    border-radius: 50%;
+                    cursor: pointer;
+                    font-size: 12px;
+                    font-weight: bold;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0.7;
+                    transition: opacity 0.2s;
+                `;
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Xóa hình ảnh #${index + 1}?`)) {
+                        currentImages.splice(index, 1);
+                        renderImages();
+                    }
+                };
+                wrapper.appendChild(deleteBtn);
+
+                wrapper.addEventListener('dragstart', (e) => {
+                    wrapper.style.opacity = '0.5';
+                    e.dataTransfer.setData('text/plain', index.toString());
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                wrapper.addEventListener('dragend', () => {
+                    wrapper.style.opacity = '1';
+                });
+
+                wrapper.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    wrapper.style.borderColor = theme.success;
+                });
+
+                wrapper.addEventListener('dragleave', () => {
+                    wrapper.style.borderColor = theme.border;
+                });
+
+                wrapper.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    wrapper.style.borderColor = theme.border;
+                    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                    const toIndex = index;
+                    if (fromIndex !== toIndex) {
+                        const [movedItem] = currentImages.splice(fromIndex, 1);
+                        currentImages.splice(toIndex, 0, movedItem);
+                        renderImages();
+                    }
+                });
+
+                grid.appendChild(wrapper);
+            });
+        }
+
+        renderImages();
+        content.appendChild(grid);
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.cssText = `
+            display: flex;
+            gap: 10px;
+        `;
+
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = '💾 Lưu thay đổi';
+        saveBtn.style.cssText = `
+            flex: 1;
+            padding: 12px;
+            background: ${theme.success};
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        `;
+        saveBtn.onclick = () => {
+            if (currentImages.length === 0) {
+                if (confirm('Album sẽ trống. Bạn có muốn xóa album này không?')) {
+                    deleteAlbum(albumIndex);
+                    modal.remove();
+                    if (parentModal) parentModal.remove();
+                    showSettingsDialog();
+                    return;
+                }
+            }
+            updateAlbumImages(albumIndex, currentImages);
+            modal.remove();
+            if (parentModal) parentModal.remove();
+            showSettingsDialog();
+        };
+        buttonContainer.appendChild(saveBtn);
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Hủy';
+        cancelBtn.style.cssText = `
+            flex: 1;
+            padding: 12px;
+            background: ${theme.secondary};
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        `;
+        cancelBtn.onclick = () => modal.remove();
+        buttonContainer.appendChild(cancelBtn);
+
+        content.appendChild(buttonContainer);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        };
     }
 
     function extractAlbumId(url) {
@@ -1706,7 +1996,12 @@
                     </td>
                     <td style="padding: 10px; text-align: center; font-size: 12px; background: ${theme.lightBg};">${imageCount}</td>
                     <td style="padding: 10px; text-align: center;">
-                        <img src="${album.preview}" style="max-width: 60px; max-height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid ${theme.border};">
+                        <div class="album-preview-btn" data-index="${index}" style="position: relative; display: inline-block; cursor: pointer;" title="Nhấp để xem và quản lý hình ảnh">
+                            <img src="${album.preview}" style="max-width: 60px; max-height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid ${theme.border}; transition: transform 0.2s, box-shadow 0.2s; display: block;">
+                            <div style="position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: rgba(0,0,0,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid ${theme.bg}; pointer-events: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </div>
+                        </div>
                     </td>
                     <td style="padding: 10px; text-align: center;">
                         <button class="album-export-btn" data-index="${index}" style="padding: 6px 10px; background: transparent; color: ${theme.text}; border: 1px solid ${theme.border}; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;" title="Xuất album này">
@@ -1777,6 +2072,32 @@
             if (e.target.classList.contains('album-export-btn')) {
                 const index = parseInt(e.target.dataset.index);
                 exportSingleAlbum(index);
+            }
+            const previewBtn = e.target.closest('.album-preview-btn');
+            if (previewBtn) {
+                const index = parseInt(previewBtn.dataset.index);
+                showAlbumImagesPopup(index, modal);
+            }
+        });
+
+        tbody.addEventListener('mouseover', (e) => {
+            const wrapper = e.target.closest('.album-preview-btn');
+            if (wrapper) {
+                const img = wrapper.querySelector('img');
+                if (img) {
+                    img.style.transform = 'scale(1.1)';
+                    img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+                }
+            }
+        });
+        tbody.addEventListener('mouseout', (e) => {
+            const wrapper = e.target.closest('.album-preview-btn');
+            if (wrapper) {
+                const img = wrapper.querySelector('img');
+                if (img) {
+                    img.style.transform = 'scale(1)';
+                    img.style.boxShadow = 'none';
+                }
             }
         });
 
