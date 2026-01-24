@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Voz Emoji
 // @namespace    Voz Emoji
-// @version      2.2
+// @version      2.3
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=voz.vn
 // @description  Add emoji button to toolbar
 // @author       Fioren
@@ -390,12 +390,12 @@
                 wrapper.draggable = true;
                 wrapper.dataset.index = index;
 
-                wrapper.onmouseover = function() {
+                wrapper.onmouseover = function () {
                     this.style.borderColor = theme.primary;
                     this.style.transform = 'scale(1.03)';
                     this.querySelector('.delete-btn').style.opacity = '1';
                 };
-                wrapper.onmouseout = function() {
+                wrapper.onmouseout = function () {
                     this.style.borderColor = theme.border;
                     this.style.transform = 'scale(1)';
                     this.querySelector('.delete-btn').style.opacity = '0.7';
@@ -2831,9 +2831,10 @@
                 gap: 12px;
             `;
 
-            album.images.forEach((img) => {
+            album.images.forEach((img, imgIndex) => {
                 const imgContainer = document.createElement('div');
                 imgContainer.style.cssText = `
+                    position: relative;
                     cursor: pointer;
                     text-align: center;
                     padding: 8px;
@@ -2846,12 +2847,16 @@
                     this.style.borderColor = theme.primary;
                     this.style.background = isDarkMode ? '#2a4a6a' : '#f0f7ff';
                     this.style.transform = 'scale(1.05)';
+                    const deleteBtn = this.querySelector('.recent-delete-btn');
+                    if (deleteBtn) deleteBtn.style.opacity = '1';
                 };
 
                 imgContainer.onmouseout = function () {
                     this.style.borderColor = theme.border;
                     this.style.background = 'transparent';
                     this.style.transform = 'scale(1)';
+                    const deleteBtn = this.querySelector('.recent-delete-btn');
+                    if (deleteBtn) deleteBtn.style.opacity = '0.7';
                 };
 
                 const image = document.createElement('img');
@@ -2869,7 +2874,44 @@
 
                 imgContainer.appendChild(image);
 
-                imgContainer.onclick = () => {
+                if (isRecent) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'recent-delete-btn';
+                    deleteBtn.innerHTML = '✕';
+                    deleteBtn.style.cssText = `
+                        position: absolute;
+                        top: -8px;
+                        right: -8px;
+                        width: 22px;
+                        height: 22px;
+                        background: ${theme.danger};
+                        color: white;
+                        border: 2px solid ${theme.bg};
+                        border-radius: 50%;
+                        cursor: pointer;
+                        font-size: 12px;
+                        font-weight: bold;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        opacity: 0.7;
+                        transition: opacity 0.2s;
+                        z-index: 1;
+                    `;
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        let recentEmojis = getRecentEmojis();
+                        recentEmojis.splice(imgIndex, 1);
+                        GM_setValue(RECENT_KEY, recentEmojis);
+                        album.images = recentEmojis;
+                        renderAlbumContent(album, true);
+                    };
+                    imgContainer.appendChild(deleteBtn);
+                }
+
+                imgContainer.onclick = (e) => {
+                    if (e.target.classList.contains('recent-delete-btn')) return;
+
                     const emojiUrl = img.url;
                     const emojiBase64 = img.base64;
 
@@ -2906,6 +2948,54 @@
             });
 
             contentContainer.appendChild(imagesGrid);
+
+            if (isRecent && album.images.length > 0) {
+                const clearAllContainer = document.createElement('div');
+                clearAllContainer.style.cssText = `
+                    display: flex;
+                    justify-content: center;
+                    margin-top: 16px;
+                `;
+
+                const clearAllBtn = document.createElement('button');
+                clearAllBtn.innerHTML = '🗑️';
+                clearAllBtn.title = 'Xóa hết gần đây';
+                clearAllBtn.style.cssText = `
+                    width: 36px;
+                    height: 36px;
+                    background: transparent;
+                    border: 1px solid ${theme.border};
+                    border-radius: 50%;
+                    cursor: pointer;
+                    font-size: 18px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s;
+                    opacity: 0.6;
+                `;
+                clearAllBtn.onmouseover = function () {
+                    this.style.opacity = '1';
+                    this.style.background = theme.lightBg;
+                    this.style.transform = 'scale(1.1)';
+                };
+                clearAllBtn.onmouseout = function () {
+                    this.style.opacity = '0.6';
+                    this.style.background = 'transparent';
+                    this.style.transform = 'scale(1)';
+                };
+                clearAllBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (confirm('Bạn có chắc muốn xóa tất cả emoji gần đây?')) {
+                        GM_setValue(RECENT_KEY, []);
+                        album.images = [];
+                        renderAlbumContent(album, true);
+                    }
+                };
+
+                clearAllContainer.appendChild(clearAllBtn);
+                contentContainer.appendChild(clearAllContainer);
+            }
         }
 
         if (shouldShowRecent) {
