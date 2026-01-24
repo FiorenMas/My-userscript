@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Voz Emoji
 // @namespace    Voz Emoji
-// @version      2.0
+// @version      2.1
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=voz.vn
 // @description  Add emoji button to toolbar
 // @author       Fioren
@@ -79,7 +79,8 @@
                     const hashArray = Array.from(new Uint8Array(hashBuffer));
                     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
                     const formData = new FormData();
-                    formData.append('file', processedBlob, `${hashHex}.webp`);
+                    const fileExtension = processedBlob.type === 'image/gif' ? 'gif' : 'webp';
+                    formData.append('file', processedBlob, `${hashHex}.${fileExtension}`);
                     formData.append('cf-turnstile-response', turnstileToken);
 
                     const uploadResponse = await fetch('/upload', {
@@ -113,6 +114,10 @@
             window.parent.postMessage({ type: 'VOZ_EMOJI_READY' }, '*');
         }
         async function processImageForUpload(file) {
+            if (file.type === 'image/gif') {
+                return file;
+            }
+
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
@@ -357,6 +362,15 @@
     }
 
     async function resizeImage(blob) {
+        if (blob.type === 'image/gif') {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Failed to read GIF'));
+                reader.readAsDataURL(blob);
+            });
+        }
+
         return new Promise((resolve, reject) => {
             const img = new Image();
             const url = URL.createObjectURL(blob);
