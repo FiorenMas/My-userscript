@@ -4,6 +4,7 @@
 // @version      1.0
 // @author       Fioren
 // @match        https://voz.vn/*
+// @version      1.0
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=voz.vn
 // @grant        none
 // @run-at       document-idle
