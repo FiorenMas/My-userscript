@@ -7,6 +7,8 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=voz.vn
 // @grant        none
 // @run-at       document-idle
+// @downloadURL  https://raw.githubusercontent.com/FiorenMas/My-userscript/refs/heads/main/voz-remove-spam.user.js
+// @updateURL    https://raw.githubusercontent.com/FiorenMas/My-userscript/refs/heads/main/voz-remove-spam.user.js
 // ==/UserScript==
 
 (function () {
