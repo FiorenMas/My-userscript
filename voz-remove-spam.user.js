@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Voz.vn Xóa Post Spam
-// @namespace    https://voz.vn/
+// @namespace    Voz remove spam
 // @version      1.0
 // @author       Fioren
 // @match        https://voz.vn/*
